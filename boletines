@@ -1,0 +1,1389 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  Users, Settings, Plus, Trash2, Copy, Check, ChevronDown, ChevronRight,
+  Edit3, X, FileText, UserPlus, Download, RotateCcw, Sparkles, Calendar
+} from 'lucide-react';
+
+const STORAGE_KEY = 'boletines-app-v4';
+
+const uid = () => Math.random().toString(36).slice(2, 9);
+
+function makeDefaultPeriods() {
+  return [
+    { id: uid(), name: 'Primer período' },
+    { id: uid(), name: 'Segundo período' },
+    { id: uid(), name: 'Tercer período' },
+  ];
+}
+
+function makeDefaultStructure() {
+  const d = (text, label) => ({ id: uid(), text, ...(label ? { label } : {}) });
+
+  return [
+    // 1. APRENDER A APRENDER
+    {
+      id: uid(),
+      name: 'Aprender a aprender',
+      categories: [
+        {
+          id: uid(), name: 'Disponibilidad', connector: '',
+          groups: [{
+            id: uid(), name: '', type: 'single',
+            descriptors: [
+              d('En proceso de mostrar disponibilidad para el aprendizaje.'),
+              d('Necesita andamiaje docente para demostrar disponibilidad hacia el aprendizaje.'),
+              d('Muestra actitud positiva hacia los aprendizajes que más lo motivan.'),
+              d('Siempre se muestra disponible para el aprendizaje.'),
+            ]
+          }]
+        },
+        {
+          id: uid(), name: 'Autonomía', connector: '',
+          groups: [{
+            id: uid(), name: '', type: 'single',
+            descriptors: [
+              d('No logra realizar tareas de forma individual y tampoco pide ayuda.'),
+              d('Necesita acompañamiento para terminar la tarea, pero es capaz de pedir ayuda.'),
+              d('Trabaja mayormente de forma autónoma y pide ayuda siempre que la necesita.'),
+              d('Logra un trabajo autónomo y se anima a pedir ayuda si es necesario.'),
+            ]
+          }]
+        },
+        {
+          id: uid(), name: 'Responsabilidad', connector: '',
+          groups: [{
+            id: uid(), name: '', type: 'single',
+            descriptors: [
+              d('Está en proceso de demostrar responsabilidad.'),
+              d('Es fluctuante en la demostración de responsabilidad.'),
+              d('Es responsable.'),
+            ]
+          }]
+        },
+        {
+          id: uid(), name: 'Perseverancia', connector: '',
+          groups: [{
+            id: uid(), name: '', type: 'single',
+            descriptors: [
+              d('Está en proceso de demostrar perseverancia, se frustra ante el error.'),
+              d('Es fluctuante en la demostración de perseverancia, en ocasiones logra ver el error como una oportunidad y entonces sigue trabajando en la mejoría de sus producciones.'),
+              d('Es perseverante, comprometido con la realización de un buen trabajo, entiende al error como una oportunidad de mejora.'),
+            ]
+          }]
+        },
+        {
+          id: uid(), name: 'Organización', connector: '',
+          groups: [{
+            id: uid(), name: '', type: 'single',
+            descriptors: [
+              d('Está en un proceso de lograr una organización que le permita llevar adelante las tareas propuestas de forma ordenada y en el tiempo propuesto.'),
+              d('Logra organizarse si se le brinda un modelo, aún seguimos ajustando los tiempos de trabajo.'),
+              d('Puede planificar los pasos a seguir de forma autónoma, pero no logra realizarlos en el tiempo establecido.'),
+              d('Logra planificar y organizarse cumpliendo con lo que se le ha asignado.'),
+            ]
+          }]
+        },
+      ]
+    },
+
+    // 2. COMUNICACIÓN
+    {
+      id: uid(),
+      name: 'Comunicación',
+      categories: [
+        {
+          id: uid(), name: 'Hablar', connector: 'Al hablar,',
+          groups: [{
+            id: uid(), name: '', type: 'single',
+            descriptors: [
+              d('Se comunica a requerimiento utilizando enunciados pertinentes.'),
+              d('Se comunica espontáneamente utilizando enunciados de acuerdo con sus intereses, aún sin pertinencia a la situación comunicativa.'),
+              d('Se comunica en forma espontánea con coherencia y cohesión a la situación comunicativa.'),
+            ]
+          }]
+        },
+        {
+          id: uid(), name: 'Escuchar', connector: '',
+          groups: [{
+            id: uid(), name: '', type: 'single',
+            descriptors: [
+              d('Se encuentra en proceso de lograr escuchar al maestro y/o a sus pares, ya que aún no respeta los turnos del habla.'),
+              d('Con mediación del docente logra una escucha atenta y sostenida, comprendiendo el mensaje.'),
+              d('Logra una escucha atenta y sostenida en forma autónoma, comprendiendo el mensaje.'),
+              d('Logra una escucha atenta, sostenida y reflexiva en forma autónoma, interpretando y comprendiendo el mensaje.'),
+            ]
+          }]
+        },
+        {
+          id: uid(), name: 'Fluidez lectora', connector: '',
+          groups: [{
+            id: uid(), name: '', type: 'single',
+            descriptors: [
+              d('Está en proceso de leer en forma fluida.'),
+              d('Lee en forma fluida.'),
+              d('Lee en forma fluida respetando las pausas indicadas por signos de puntuación.'),
+              d('Lee con prosodia: oraliza el texto en forma fluida y expresiva.'),
+            ]
+          }]
+        },
+        {
+          id: uid(), name: 'Leer', connector: 'En la comprensión lectora,',
+          groups: [{
+            id: uid(), name: '', type: 'single',
+            descriptors: [
+              d('Logra comprensión global del texto.'),
+              d('Reconoce información explícita en textos.'),
+              d('Reconoce información implícita en diferentes textos.'),
+              d('Identifica y comprende la información nueva que le proporciona el texto y la vincula con la información obtenida en lecturas previas.'),
+            ]
+          }]
+        },
+        {
+          id: uid(), name: 'Escribir', connector: 'En relación con sus producciones escritas,',
+          groups: [
+            {
+              id: uid(), name: '', type: 'single',
+              descriptors: [
+                d('Produce textos narrativos aún con dificultades de coherencia y cohesión.'),
+                d('Produce textos coherentes, con mediación docente.'),
+                d('Produce textos coherentes y cohesivos.'),
+              ]
+            },
+            {
+              id: uid(), name: 'Omisiones', type: 'single',
+              descriptors: [
+                d('aparecen omisiones'),
+                d('no aparecen omisiones'),
+              ]
+            },
+            {
+              id: uid(), name: 'Uso de mayúsculas y minúsculas', type: 'single',
+              descriptors: [
+                d('las intercala sin orden'),
+                d('no las utiliza según lo que indican las reglas de sintaxis o respetando nombres propios'),
+                d('respeta reglas ortográficas'),
+              ]
+            },
+            {
+              id: uid(), name: 'Uso de signos de puntuación', type: 'single',
+              descriptors: [
+                d('en proceso de utilizarlos correctamente'),
+                d('los utiliza frecuentemente de forma correcta'),
+                d('ha sistematizado el uso de signos de puntuación'),
+              ]
+            },
+            {
+              id: uid(), name: 'Errores de ortografía', type: 'multi',
+              descriptors: [
+                d('en la correspondencia fonema-grafema'),
+                d('en reglas básicas'),
+                d('en reglas irregulares o tildes'),
+              ]
+            },
+            {
+              id: uid(), name: 'Planificación de textos', type: 'single',
+              descriptors: [
+                d('no logra una planificación de textos aún utilizando guías'),
+                d('con la guía logra planificar sus textos'),
+                d('puede planificar sus textos ordenando sus ideas previamente'),
+                d('planifica sus textos y además realiza una relectura crítica donde termina de corregir aspectos sintácticos'),
+              ]
+            },
+          ]
+        },
+      ]
+    },
+
+    // 3. CIENTÍFICO MATEMÁTICO
+    {
+      id: uid(),
+      name: 'Científico matemático',
+      categories: [
+        {
+          id: uid(), name: 'Numeración', connector: 'En cuanto a numeración,',
+          groups: [
+            {
+              id: uid(), name: 'Lectura y escritura', type: 'single',
+              descriptors: [
+                d('Puede leer números mayores a 6 cifras.'),
+                d('Puede escribir números mayores a 6 cifras.'),
+                d('Puede leer y escribir números mayores a 6 cifras.'),
+              ]
+            },
+            {
+              id: uid(), name: 'Valor posicional', type: 'multi',
+              descriptors: [
+                d('Reconoce que el número se puede descomponer en otras unidades. Reconoce el valor posicional de los dígitos.'),
+                d('Descompone aditivamente.'),
+                d('Descompone multiplicativamente.'),
+                d('Utiliza la notación científica con acierto.'),
+                d('Utiliza la descomposición como parte de estrategias de resolución de problemas.'),
+              ]
+            },
+            {
+              id: uid(), name: 'Orden en la recta', type: 'multi',
+              descriptors: [
+                d('Ordena naturales.'),
+                d('Ordena decimales.'),
+                d('Ordena fracciones menores a la unidad con representación gráfica.'),
+                d('Ordena fracciones menores a la unidad sin representación gráfica.'),
+                d('Ordena fracciones mayores a la unidad con representación gráfica.'),
+                d('Ordena fracciones mayores a la unidad sin representación gráfica.'),
+                d('Comprende equivalencias entre distintas expresiones de un mismo número.'),
+              ]
+            },
+          ]
+        },
+        {
+          id: uid(), name: 'Operaciones', connector: 'En cuanto al cálculo,',
+          groups: [
+            {
+              id: uid(), name: 'Suma', type: 'single',
+              descriptors: [
+                d('Resuelve el algoritmo de la suma sin dificultad.'),
+                d('Resuelve y aplica en variadas situaciones problema el algoritmo de la suma sin dificultad.'),
+                d('Resuelve el algoritmo de la suma con dificultad.'),
+                d('Resuelve y aplica en variadas situaciones problema el algoritmo de la suma con dificultad.'),
+              ]
+            },
+            {
+              id: uid(), name: 'Resta', type: 'single',
+              descriptors: [
+                d('Resuelve el algoritmo de la resta sin dificultad.'),
+                d('Resuelve y aplica en variadas situaciones problema el algoritmo de la resta sin dificultad.'),
+                d('Resuelve el algoritmo de la resta con dificultad.'),
+                d('Resuelve y aplica en variadas situaciones problema el algoritmo de la resta con dificultad.'),
+              ]
+            },
+            {
+              id: uid(), name: 'Multiplicación', type: 'single',
+              descriptors: [
+                d('Resuelve el algoritmo de la multiplicación entre una cifra.'),
+                d('Resuelve y aplica en variadas situaciones problema el algoritmo de la multiplicación entre una cifra.'),
+                d('Resuelve el algoritmo de la multiplicación entre dos cifras.'),
+                d('Resuelve y aplica en variadas situaciones problema el algoritmo de la multiplicación entre dos cifras.'),
+              ]
+            },
+            {
+              id: uid(), name: 'División', type: 'single',
+              descriptors: [
+                d('Resuelve el algoritmo de la división entre una cifra.'),
+                d('Resuelve y aplica en variadas situaciones problema el algoritmo de la división entre una cifra.'),
+                d('Resuelve el algoritmo de la división entre dos cifras.'),
+                d('Resuelve y aplica en variadas situaciones problema el algoritmo de la división entre dos cifras.'),
+              ]
+            },
+            {
+              id: uid(), name: 'Potencia', type: 'single',
+              descriptors: [
+                d('Reconoce el sentido de las potencias pero al desarrollarlas las confunde con una multiplicación.'),
+                d('Reconoce el sentido de las potencias y puede escribir su desarrollo.'),
+                d('Reconoce el sentido de las potencias, las desarrolla y las resuelve.'),
+              ]
+            },
+            {
+              id: uid(), name: 'Operaciones combinadas', type: 'single',
+              descriptors: [
+                d('Al resolverlas no respeta las jerarquías.'),
+                d('Respeta las jerarquías pero aparecen errores de cálculo.'),
+                d('Respeta las jerarquías y resuelve sin errores de cálculo en la mayoría de los casos.'),
+              ]
+            },
+          ]
+        },
+        {
+          id: uid(), name: 'Magnitudes y medidas', connector: 'En lo referido a magnitudes y medidas,',
+          groups: [{
+            id: uid(), name: '', type: 'multi',
+            descriptors: []
+          }]
+        },
+        {
+          id: uid(), name: 'Trazado y elementos', connector: 'En geometría,',
+          groups: [{
+            id: uid(), name: '', type: 'multi',
+            descriptors: [
+              d('Es capaz de trazar figuras siguiendo indicaciones dadas en lenguaje geométrico, demostrando comprensión de este.', 'Trazado con indicaciones'),
+              d('Reconoce diferentes figuras geométricas y puede nombrar algunos de sus elementos con precisión.', 'Elementos de figuras'),
+              d('Reconoce el perímetro como la medida del contorno de una figura.', 'Reconocimiento del perímetro'),
+              d('Identifica la superficie o área como la medida de la extensión que ocupa una figura.', 'Reconocimiento del área'),
+              d('Puede calcular el perímetro sumando la longitud de los lados o utilizando la multiplicación en figuras regulares.', 'Cálculo del perímetro'),
+              d('Es capaz de calcular el área en figuras regulares aplicando fórmulas básicas.', 'Cálculo del área'),
+            ]
+          }]
+        },
+      ]
+    },
+
+    // 4. CIENCIAS
+    {
+      id: uid(),
+      name: 'Ciencias',
+      categories: [
+        {
+          id: uid(), name: 'Sociales — Historia', connector: 'En historia,',
+          groups: [{
+            id: uid(), name: '', type: 'single',
+            descriptors: [
+              d('Participa con dificultad en las actividades de clase, repitiendo ideas sin formular argumentos propios ni utilizar vocabulario histórico. Le cuesta formular preguntas o explicar las acciones de los sujetos sociales y procesos históricos.', 'Inicial'),
+              d('Participa en las actividades de clase con guía del docente, elabora algunos argumentos sencillos y comienza a incorporar vocabulario histórico. Formula interrogantes básicos y construye explicaciones simples sobre los procesos históricos.', 'En proceso'),
+              d('Elabora argumentos y contraargumentos pertinentes durante las actividades, utilizando con cierta precisión vocabulario histórico. Formula interrogantes relevantes y construye explicaciones que vinculan acciones de sujetos sociales con procesos históricos.', 'Logrado'),
+              d('Participa activamente en clase con argumentos y contraargumentos sólidos, integrando con claridad y autonomía el vocabulario histórico. Formula preguntas profundas y construye explicaciones elaboradas que amplían el análisis de las acciones de los sujetos sociales y los procesos históricos.', 'Avanzado'),
+            ]
+          }]
+        },
+        {
+          id: uid(), name: 'Sociales — Geografía', connector: 'En geografía,',
+          groups: [{
+            id: uid(), name: '', type: 'single',
+            descriptors: [
+              d('Reconoce algunas representaciones del mapa de la Tierra de forma asistida. Tiene dificultades para ubicar lugares usando coordenadas y husos horarios. Identifica masas continentales y oceánicas de manera general, sin localización precisa.', 'Inicial'),
+              d('Identifica diferentes tipos de proyecciones cartográficas con ayuda. Ubica lugares geográficos simples utilizando coordenadas aproximadas. Reconoce la ubicación general de continentes y océanos en el mapa. Comprende nociones básicas sobre husos horarios.', 'En proceso'),
+              d('Compara representaciones de la Tierra (Mercator, Peters, Goode, Invertida) explicando sus características. Ubica correctamente lugares a partir de latitud, longitud y husos horarios. Identifica con precisión la distribución de continentes y océanos.', 'Logrado'),
+              d('Analiza críticamente distintas proyecciones cartográficas, reflexionando sobre su uso e implicancias. Ubica con autonomía lugares en el mapa aplicando coordenadas geográficas y husos horarios. Describe y explica con precisión la distribución de masas continentales y oceánicas relacionándolas con otros fenómenos geográficos.', 'Avanzado'),
+            ]
+          }]
+        },
+        {
+          id: uid(), name: 'Ciencias de la naturaleza — Biología', connector: 'En biología,',
+          groups: [{
+            id: uid(), name: '', type: 'single',
+            descriptors: [
+              d('Participa en el laboratorio con guía del docente. Registra observaciones simples. Comienza a utilizar términos científicos con corrección parcial.', 'En proceso'),
+              d('Participa activamente en las actividades de laboratorio, colaborando con responsabilidad. Registra observaciones precisas y relevantes. Emplea el lenguaje científico con claridad y adecuación.', 'Logrado'),
+              d('Participa con iniciativa y compromiso en el laboratorio, siguiendo protocolos con autonomía. Realiza observaciones detalladas y bien fundamentadas. Utiliza de forma fluida y precisa el lenguaje científico en sus explicaciones y registros.', 'Avanzado'),
+            ]
+          }]
+        },
+      ]
+    },
+
+    // 5. RELACIÓN CON OTROS
+    {
+      id: uid(),
+      name: 'Relación con otros',
+      categories: [
+        {
+          id: uid(), name: 'Vínculos asertivos', connector: 'En sus vínculos,',
+          groups: [{
+            id: uid(), name: '', type: 'single',
+            descriptors: [
+              d('Se vincula con otros principalmente de acuerdo a sus motivaciones y necesidades inmediatas; requiere mediación para evitar herir u ofender en el trato.', 'En proceso'),
+              d('Desarrolla vínculos positivos con sus pares basados en intereses compartidos; actúa de forma solidaria y comienza a evitar actitudes discriminatorias.', 'Vínculos por intereses y solidaridad'),
+              d('Se integra en actividades con propósitos comunes, manteniendo redes de apoyo y reconociendo sus responsabilidades en el vínculo con el otro.', 'Participación colectiva'),
+              d('Construye nuevos espacios de referencia más allá de su grupo cercano; desarrolla la asertividad y la responsabilidad afectiva en procura del cuidado mutuo.', 'Referencia y asertividad'),
+            ]
+          }]
+        },
+        {
+          id: uid(), name: 'Reconocimiento del otro', connector: 'En el reconocimiento del otro,',
+          groups: [{
+            id: uid(), name: '', type: 'single',
+            descriptors: [
+              d('Se encuentra en la etapa de identificar similitudes y diferencias básicas con sus pares, comunicándose a través de diferentes lenguajes.', 'Descubrimiento del otro'),
+              d('Intercambia experiencias que le permiten expresar su identidad e interactuar con pertinencia al entorno, reconociendo la diversidad en sí mismo y en los demás.', 'Identidad y pertinencia'),
+              d('Integra perspectivas inclusivas sobre el género, la interculturalidad y las diferencias, respetando la diversidad propia y la ajena en la vida cotidiana.', 'Perspectiva inclusiva'),
+              d('Actúa con empatía y proactividad para promover una convivencia justa; interviene asertivamente ante situaciones de discriminación o vulnerabilidad.', 'Acción proactiva y empatía'),
+            ]
+          }]
+        },
+        {
+          id: uid(), name: 'Trabajo colaborativo', connector: 'En el trabajo colaborativo,',
+          groups: [{
+            id: uid(), name: '', type: 'single',
+            descriptors: [
+              d('Participa de propuestas lúdicas o de expresión artística donde comienza a compartir el espacio y los materiales con otros.', 'Interacción inicial'),
+              d('Utiliza diversos medios y tecnologías para comunicarse con sus pares y colaborar en tareas sencillas.', 'Intercambio y expresión'),
+              d('Se integra activamente para coconstruir y cocrear con sus compañeros, valorando los diferentes puntos de vista del equipo.', 'Cocreación colaborativa'),
+              d('Actúa con solidaridad y defiende el respeto mutuo dentro del trabajo grupal, asegurando que todos se sientan integrados.', 'Defensa de derechos en el grupo'),
+            ]
+          }]
+        },
+      ]
+    },
+  ];
+}
+
+// ---------- generator ----------
+const joinPhrases = (phrases) => {
+  if (phrases.length === 0) return '';
+  if (phrases.length === 1) return phrases[0];
+  if (phrases.length === 2) return `${phrases[0]} y ${phrases[1]}`;
+  return `${phrases.slice(0, -1).join(', ')} y ${phrases[phrases.length - 1]}`;
+};
+
+const lowerFirst = (s) => s ? s.charAt(0).toLowerCase() + s.slice(1) : s;
+
+const generateBoletin = (student, structure, activePeriodId) => {
+  if (!student) return { plain: '', sections: [] };
+
+  const sel = student.periodSelections?.[activePeriodId] || {};
+  const sections = [];
+
+  structure.forEach((comp) => {
+    const lines = [];
+    comp.categories.forEach((cat) => {
+      const fragments = [];
+
+      cat.groups.forEach((group) => {
+        const groupSel = sel[group.id];
+        let texts = [];
+        if (group.type === 'single') {
+          if (groupSel) {
+            const desc = group.descriptors.find(x => x.id === groupSel);
+            if (desc) texts = [desc.text];
+          }
+        } else {
+          if (Array.isArray(groupSel)) {
+            texts = groupSel
+              .map(id => group.descriptors.find(x => x.id === id))
+              .filter(Boolean)
+              .map(x => x.text);
+          }
+        }
+        if (texts.length === 0) return;
+
+        if (group.name && group.name.trim()) {
+          const joined = joinPhrases(texts).replace(/\.\s*$/, '');
+          fragments.push(`${group.name}: ${joined}.`);
+        } else {
+          texts.forEach(t => fragments.push(t));
+        }
+      });
+
+      if (fragments.length === 0) return;
+
+      let line;
+      const connector = (cat.connector || '').trim();
+      if (connector) {
+        const first = lowerFirst(fragments[0]);
+        const rest = fragments.slice(1).join(' ');
+        line = `${connector} ${first}${rest ? ' ' + rest : ''}`;
+      } else {
+        line = fragments.join(' ');
+      }
+      lines.push(line);
+    });
+
+    if (lines.length > 0) {
+      sections.push({ title: comp.name, paragraph: lines.join(' ') });
+    }
+  });
+
+  const plain = sections.map(s => `${s.title}\n${s.paragraph}`).join('\n\n');
+  return { plain, sections };
+};
+
+// migration
+const migrate = (data) => {
+  let { structure, periods, students, selectedStudentId, activePeriodId } = data;
+
+  // ensure periods exist
+  if (!Array.isArray(periods) || periods.length === 0) {
+    periods = makeDefaultPeriods();
+  }
+
+  // ensure activePeriodId is valid
+  if (!periods.find(p => p.id === activePeriodId)) {
+    activePeriodId = periods[0].id;
+  }
+
+  // structure: ensure connector field on categories
+  if (Array.isArray(structure)) {
+    structure = structure.map(comp => ({
+      ...comp,
+      categories: (comp.categories || []).map(cat => ({
+        connector: '',
+        ...cat,
+      }))
+    }));
+  }
+
+  // students: convert old `selections` to periodSelections under first period
+  if (Array.isArray(students)) {
+    students = students.map(s => {
+      if (s.periodSelections) return s;
+      if (s.selections) {
+        const firstPeriodId = periods[0].id;
+        return {
+          id: s.id,
+          name: s.name,
+          periodSelections: { [firstPeriodId]: s.selections }
+        };
+      }
+      return { ...s, periodSelections: {} };
+    });
+  }
+
+  return { structure, periods, students, selectedStudentId, activePeriodId };
+};
+
+// ---------- main app ----------
+export default function App() {
+  const [structure, setStructure] = useState(() => makeDefaultStructure());
+  const [periods, setPeriods] = useState(() => makeDefaultPeriods());
+  const [students, setStudents] = useState([]);
+  const [selectedStudentId, setSelectedStudentId] = useState(null);
+  const [activePeriodId, setActivePeriodId] = useState(null);
+  const [view, setView] = useState('students');
+  const [loaded, setLoaded] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // load
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await window.storage.get(STORAGE_KEY);
+        if (r?.value) {
+          const data = JSON.parse(r.value);
+          const m = migrate(data);
+          if (m.structure) setStructure(m.structure);
+          if (m.periods) setPeriods(m.periods);
+          if (m.students) setStudents(m.students);
+          if (m.selectedStudentId) setSelectedStudentId(m.selectedStudentId);
+          if (m.activePeriodId) setActivePeriodId(m.activePeriodId);
+        }
+      } catch {}
+      setLoaded(true);
+    })();
+  }, []);
+
+  // make sure activePeriodId is set once periods are ready
+  useEffect(() => {
+    if (loaded && !activePeriodId && periods.length > 0) {
+      setActivePeriodId(periods[0].id);
+    }
+  }, [loaded, activePeriodId, periods]);
+
+  // save
+  useEffect(() => {
+    if (!loaded) return;
+    (async () => {
+      try {
+        await window.storage.set(STORAGE_KEY, JSON.stringify({
+          structure, periods, students, selectedStudentId, activePeriodId
+        }));
+      } catch {}
+    })();
+  }, [structure, periods, students, selectedStudentId, activePeriodId, loaded]);
+
+  const selectedStudent = useMemo(
+    () => students.find((s) => s.id === selectedStudentId) || null,
+    [students, selectedStudentId]
+  );
+
+  const boletin = useMemo(
+    () => generateBoletin(selectedStudent, structure, activePeriodId),
+    [selectedStudent, structure, activePeriodId]
+  );
+
+  const activePeriod = periods.find(p => p.id === activePeriodId);
+
+  // students
+  const addStudent = () => {
+    const name = prompt('Nombre del niño/a:');
+    if (!name?.trim()) return;
+    const newS = { id: uid(), name: name.trim(), periodSelections: {} };
+    setStudents([...students, newS]);
+    setSelectedStudentId(newS.id);
+  };
+
+  const renameStudent = (id) => {
+    const s = students.find((x) => x.id === id);
+    const name = prompt('Nuevo nombre:', s?.name);
+    if (!name?.trim()) return;
+    setStudents(students.map((x) => (x.id === id ? { ...x, name: name.trim() } : x)));
+  };
+
+  const removeStudent = (id) => {
+    if (!confirm('¿Eliminar este estudiante? Se borrarán sus marcas en todos los períodos.')) return;
+    setStudents(students.filter((x) => x.id !== id));
+    if (selectedStudentId === id) setSelectedStudentId(null);
+  };
+
+  const duplicateStudent = (id) => {
+    const s = students.find((x) => x.id === id);
+    if (!s) return;
+    const name = prompt('Nombre del duplicado:', `${s.name} (copia)`);
+    if (!name?.trim()) return;
+    const dup = {
+      id: uid(),
+      name: name.trim(),
+      periodSelections: JSON.parse(JSON.stringify(s.periodSelections || {}))
+    };
+    setStudents([...students, dup]);
+    setSelectedStudentId(dup.id);
+  };
+
+  const updateStudentSelections = (newSelections) => {
+    setStudents(students.map((s) => {
+      if (s.id !== selectedStudentId) return s;
+      return {
+        ...s,
+        periodSelections: { ...s.periodSelections, [activePeriodId]: newSelections }
+      };
+    }));
+  };
+
+  const currentSelections = selectedStudent?.periodSelections?.[activePeriodId] || {};
+
+  const setSingleSelection = (groupId, descriptorId) => {
+    if (!selectedStudent) return;
+    const newSel = { ...currentSelections };
+    if (newSel[groupId] === descriptorId) delete newSel[groupId];
+    else newSel[groupId] = descriptorId;
+    updateStudentSelections(newSel);
+  };
+
+  const toggleMultiSelection = (groupId, descriptorId) => {
+    if (!selectedStudent) return;
+    const newSel = { ...currentSelections };
+    const current = Array.isArray(newSel[groupId]) ? newSel[groupId] : [];
+    if (current.includes(descriptorId)) {
+      const next = current.filter(x => x !== descriptorId);
+      if (next.length === 0) delete newSel[groupId];
+      else newSel[groupId] = next;
+    } else {
+      newSel[groupId] = [...current, descriptorId];
+    }
+    updateStudentSelections(newSel);
+  };
+
+  const clearStudentSelections = () => {
+    if (!selectedStudent) return;
+    if (!confirm(`¿Borrar las marcas de este estudiante en ${activePeriod?.name}?`)) return;
+    updateStudentSelections({});
+  };
+
+  const copyFromPeriod = () => {
+    if (!selectedStudent) return;
+    const otherPeriods = periods.filter(p => p.id !== activePeriodId);
+    if (otherPeriods.length === 0) return;
+    const names = otherPeriods.map((p, i) => `${i + 1}. ${p.name}`).join('\n');
+    const choice = prompt(`¿Desde qué período copiar las marcas a ${activePeriod?.name}?\n\n${names}\n\nEscribí el número:`);
+    const idx = parseInt(choice, 10) - 1;
+    if (isNaN(idx) || idx < 0 || idx >= otherPeriods.length) return;
+    const sourcePeriod = otherPeriods[idx];
+    const sourceSel = selectedStudent.periodSelections?.[sourcePeriod.id] || {};
+    if (Object.keys(sourceSel).length === 0) {
+      alert(`${sourcePeriod.name} no tiene marcas para copiar.`);
+      return;
+    }
+    if (!confirm(`Esto reemplaza las marcas actuales de ${activePeriod?.name} con las de ${sourcePeriod.name}. ¿Continuar?`)) return;
+    updateStudentSelections(JSON.parse(JSON.stringify(sourceSel)));
+  };
+
+  const copyBoletin = async () => {
+    try {
+      await navigator.clipboard.writeText(`Boletín — ${selectedStudent?.name || ''} — ${activePeriod?.name || ''}\n\n${boletin.plain}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {}
+  };
+
+  const downloadBoletin = () => {
+    const text = `Boletín — ${selectedStudent?.name || ''} — ${activePeriod?.name || ''}\n\n${boletin.plain}`;
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const safeName = selectedStudent?.name?.replace(/\s+/g, '-') || 'estudiante';
+    const safePeriod = activePeriod?.name?.replace(/\s+/g, '-') || 'periodo';
+    a.download = `boletin-${safeName}-${safePeriod}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // periods CRUD
+  const addPeriod = () => {
+    const name = prompt('Nombre del período:', `Período ${periods.length + 1}`);
+    if (!name?.trim()) return;
+    setPeriods([...periods, { id: uid(), name: name.trim() }]);
+  };
+
+  const renamePeriod = (id) => {
+    const p = periods.find(x => x.id === id);
+    const name = prompt('Nuevo nombre:', p?.name);
+    if (!name?.trim()) return;
+    setPeriods(periods.map(x => x.id === id ? { ...x, name: name.trim() } : x));
+  };
+
+  const removePeriod = (id) => {
+    if (periods.length <= 1) {
+      alert('No se puede eliminar el último período.');
+      return;
+    }
+    if (!confirm('¿Eliminar este período? Se perderán las marcas de todos los estudiantes en este período.')) return;
+    setPeriods(periods.filter(x => x.id !== id));
+    setStudents(students.map(s => {
+      const ps = { ...(s.periodSelections || {}) };
+      delete ps[id];
+      return { ...s, periodSelections: ps };
+    }));
+    if (activePeriodId === id) {
+      const remaining = periods.filter(x => x.id !== id);
+      setActivePeriodId(remaining[0]?.id || null);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#faf7f2] text-[#1a1d24]" style={{ fontFamily: 'Manrope, ui-sans-serif, system-ui' }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap');
+        .font-display { font-family: 'Fraunces', ui-serif, Georgia; font-optical-sizing: auto; }
+        .paper-bg { background-image: radial-gradient(circle at 1px 1px, rgba(26, 29, 36, 0.05) 1px, transparent 0); background-size: 24px 24px; }
+        .ink-shadow { box-shadow: 0 1px 0 rgba(26, 29, 36, 0.08), 0 8px 24px -12px rgba(26, 29, 36, 0.12); }
+      `}</style>
+
+      <header className="border-b border-[#1a1d24]/10 bg-[#faf7f2]/90 backdrop-blur sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-baseline gap-3">
+            <h1 className="font-display text-2xl font-semibold tracking-tight">Boletines</h1>
+            <span className="text-xs text-[#1a1d24]/50 hidden sm:inline">elegí, marcá, redactado.</span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <PeriodSelector periods={periods} activeId={activePeriodId} onChange={setActivePeriodId} />
+            <nav className="flex items-center gap-1 bg-[#1a1d24]/5 rounded-full p-1">
+              <button
+                onClick={() => setView('students')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition ${view === 'students' ? 'bg-[#1a1d24] text-[#faf7f2]' : 'text-[#1a1d24]/70 hover:text-[#1a1d24]'}`}
+              >
+                <Users size={13} /> Estudiantes
+              </button>
+              <button
+                onClick={() => setView('structure')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition ${view === 'structure' ? 'bg-[#1a1d24] text-[#faf7f2]' : 'text-[#1a1d24]/70 hover:text-[#1a1d24]'}`}
+              >
+                <Settings size={13} /> Estructura
+              </button>
+            </nav>
+          </div>
+        </div>
+      </header>
+
+      {view === 'students' && (
+        <div className="max-w-7xl mx-auto px-6 py-6 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
+          <aside className="lg:sticky lg:top-24 lg:self-start">
+            <button
+              onClick={addStudent}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1a1d24] text-[#faf7f2] rounded-lg text-sm font-medium hover:bg-[#1a1d24]/90 transition"
+            >
+              <UserPlus size={16} /> Añadir estudiante
+            </button>
+            <ul className="mt-3 space-y-1">
+              {students.length === 0 && (
+                <li className="text-sm text-[#1a1d24]/50 italic px-3 py-2">Sin estudiantes aún.</li>
+              )}
+              {students.map((s) => {
+                const count = Object.keys(s.periodSelections?.[activePeriodId] || {}).length;
+                const active = s.id === selectedStudentId;
+                return (
+                  <li key={s.id}>
+                    <button
+                      onClick={() => setSelectedStudentId(s.id)}
+                      className={`w-full text-left px-3 py-2.5 rounded-lg transition flex items-center justify-between ${active ? 'bg-[#1a1d24] text-[#faf7f2]' : 'hover:bg-[#1a1d24]/5'}`}
+                    >
+                      <span className="font-medium text-sm truncate">{s.name}</span>
+                      <span className={`text-xs tabular-nums ${active ? 'text-[#faf7f2]/60' : 'text-[#1a1d24]/40'}`}>{count}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="text-[10px] text-[#1a1d24]/40 italic mt-3 px-2 leading-snug">
+              El número junto a cada nombre cuenta los grupos marcados en {activePeriod?.name?.toLowerCase() || 'el período activo'}.
+            </p>
+          </aside>
+
+          <main>
+            {!selectedStudent ? (
+              <EmptyState onAdd={addStudent} hasStudents={students.length > 0} />
+            ) : (
+              <StudentView
+                student={selectedStudent}
+                structure={structure}
+                activePeriod={activePeriod}
+                onSetSingle={setSingleSelection}
+                onToggleMulti={toggleMultiSelection}
+                onRename={() => renameStudent(selectedStudent.id)}
+                onDelete={() => removeStudent(selectedStudent.id)}
+                onDuplicate={() => duplicateStudent(selectedStudent.id)}
+                onClear={clearStudentSelections}
+                onCopyFromPeriod={copyFromPeriod}
+                hasOtherPeriods={periods.length > 1}
+                boletin={boletin}
+                onCopy={copyBoletin}
+                onDownload={downloadBoletin}
+                copied={copied}
+              />
+            )}
+          </main>
+        </div>
+      )}
+
+      {view === 'structure' && (
+        <StructureEditor
+          structure={structure}
+          setStructure={setStructure}
+          periods={periods}
+          onAddPeriod={addPeriod}
+          onRenamePeriod={renamePeriod}
+          onRemovePeriod={removePeriod}
+          onResetDefault={() => {
+            if (confirm('Volver a la estructura de ejemplo. Reemplaza competencias, categorías, grupos y descriptores. Estudiantes y períodos se mantienen pero las marcas referirán a IDs viejos y aparecerán como vacías.')) {
+              setStructure(makeDefaultStructure());
+            }
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function PeriodSelector({ periods, activeId, onChange }) {
+  return (
+    <div className="flex items-center gap-1.5 bg-[#c2410c]/5 border border-[#c2410c]/20 rounded-full p-1">
+      <Calendar size={13} className="text-[#c2410c] ml-1.5" />
+      {periods.map((p, i) => (
+        <button
+          key={p.id}
+          onClick={() => onChange(p.id)}
+          title={p.name}
+          className={`px-2.5 py-1 rounded-full text-xs font-medium transition ${
+            activeId === p.id
+              ? 'bg-[#c2410c] text-white'
+              : 'text-[#c2410c]/80 hover:text-[#c2410c] hover:bg-[#c2410c]/10'
+          }`}
+        >
+          {i + 1}°
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function EmptyState({ onAdd, hasStudents }) {
+  return (
+    <div className="paper-bg border border-dashed border-[#1a1d24]/20 rounded-2xl p-12 text-center">
+      <Sparkles className="mx-auto mb-4 text-[#c2410c]" size={32} />
+      <h2 className="font-display text-2xl font-semibold mb-2">
+        {hasStudents ? 'Elegí un estudiante' : 'Empezá agregando un estudiante'}
+      </h2>
+      <p className="text-[#1a1d24]/60 max-w-md mx-auto mb-6 text-sm">
+        Marcá los descriptores que aplican y el boletín se redacta automáticamente. Cada estudiante tiene marcas independientes por período.
+      </p>
+      {!hasStudents && (
+        <button onClick={onAdd} className="inline-flex items-center gap-2 px-4 py-2 bg-[#1a1d24] text-[#faf7f2] rounded-lg text-sm font-medium">
+          <UserPlus size={16} /> Añadir el primero
+        </button>
+      )}
+    </div>
+  );
+}
+
+function StudentView({ student, structure, activePeriod, onSetSingle, onToggleMulti, onRename, onDelete, onDuplicate, onClear, onCopyFromPeriod, hasOtherPeriods, boletin, onCopy, onDownload, copied }) {
+  const currentSelections = student.periodSelections?.[activePeriod?.id] || {};
+
+  return (
+    <div className="grid grid-cols-1 xl:grid-cols-[1fr_440px] gap-6">
+      <section>
+        <div className="flex items-start justify-between mb-4 gap-3">
+          <div>
+            <h2 className="font-display text-3xl font-semibold tracking-tight leading-none">{student.name}</h2>
+            <p className="text-xs text-[#c2410c] font-medium mt-1.5 uppercase tracking-wider">{activePeriod?.name}</p>
+          </div>
+          <div className="flex items-center gap-1 flex-wrap justify-end">
+            {hasOtherPeriods && (
+              <button
+                onClick={onCopyFromPeriod}
+                className="text-[11px] uppercase tracking-wider px-2 py-1 rounded text-[#1a1d24]/60 hover:bg-[#1a1d24]/5"
+                title="Copiar marcas desde otro período"
+              >
+                copiar de otro período
+              </button>
+            )}
+            <IconBtn onClick={onRename} title="Renombrar"><Edit3 size={14} /></IconBtn>
+            <IconBtn onClick={onDuplicate} title="Duplicar (incluye todos los períodos)"><Copy size={14} /></IconBtn>
+            <IconBtn onClick={onClear} title="Borrar marcas del período activo"><RotateCcw size={14} /></IconBtn>
+            <IconBtn onClick={onDelete} title="Eliminar estudiante" danger><Trash2 size={14} /></IconBtn>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          {structure.map((comp) => (
+            <CompetenciaBlock
+              key={comp.id}
+              competencia={comp}
+              selections={currentSelections}
+              onSetSingle={onSetSingle}
+              onToggleMulti={onToggleMulti}
+            />
+          ))}
+        </div>
+      </section>
+
+      <aside className="xl:sticky xl:top-28 xl:self-start">
+        <div className="bg-white border border-[#1a1d24]/10 rounded-2xl ink-shadow overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3 border-b border-[#1a1d24]/10 bg-[#faf7f2]">
+            <div className="flex items-center gap-2">
+              <FileText size={14} className="text-[#1a1d24]/60" />
+              <div>
+                <div className="font-display text-sm font-semibold leading-none">Boletín redactado</div>
+                <div className="text-[10px] text-[#1a1d24]/50 uppercase tracking-wider mt-0.5">{activePeriod?.name}</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <button onClick={onDownload} className="p-1.5 rounded hover:bg-[#1a1d24]/5 text-[#1a1d24]/60" title="Descargar .txt">
+                <Download size={14} />
+              </button>
+              <button onClick={onCopy} className="flex items-center gap-1 px-2.5 py-1 rounded bg-[#1a1d24] text-[#faf7f2] text-xs font-medium">
+                {copied ? <><Check size={12} /> Copiado</> : <><Copy size={12} /> Copiar</>}
+              </button>
+            </div>
+          </div>
+          <div className="p-6 paper-bg max-h-[75vh] overflow-y-auto">
+            {boletin.sections.length > 0 ? (
+              <div className="font-display text-[15px] leading-[1.7] text-[#1a1d24]/90 space-y-5">
+                <div className="text-xs uppercase tracking-wider text-[#1a1d24]/50 not-italic">Boletín — {student.name} — {activePeriod?.name}</div>
+                {boletin.sections.map((s, i) => (
+                  <div key={i}>
+                    <div className="font-semibold text-[#1a1d24] mb-1.5">{s.title}</div>
+                    <p className="text-[#1a1d24]/85">{s.paragraph}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-[#1a1d24]/40 italic">Marcá descriptores y el texto aparece acá.</p>
+            )}
+          </div>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function CompetenciaBlock({ competencia, selections, onSetSingle, onToggleMulti }) {
+  return (
+    <div className="bg-white border border-[#1a1d24]/10 rounded-2xl overflow-hidden">
+      <div className="px-5 py-3 border-b border-[#1a1d24]/10 bg-[#faf7f2]">
+        <h3 className="font-display text-lg font-semibold tracking-tight">{competencia.name}</h3>
+      </div>
+      {competencia.categories.length === 0 ? (
+        <div className="px-5 py-8 text-center text-sm text-[#1a1d24]/40 italic">
+          Esta competencia aún no tiene categorías.
+        </div>
+      ) : (
+        <div className="divide-y divide-[#1a1d24]/5">
+          {competencia.categories.map((cat) => (
+            <div key={cat.id} className="px-5 py-4">
+              <h4 className="text-xs uppercase tracking-wider font-semibold text-[#1a1d24]/50 mb-3">{cat.name}</h4>
+              <div className="space-y-3">
+                {cat.groups.map((group) => (
+                  <GroupBlock
+                    key={group.id}
+                    group={group}
+                    selections={selections}
+                    onSetSingle={onSetSingle}
+                    onToggleMulti={onToggleMulti}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GroupBlock({ group, selections, onSetSingle, onToggleMulti }) {
+  const sel = selections?.[group.id];
+  const isMulti = group.type === 'multi';
+
+  if (group.descriptors.length === 0) {
+    return (
+      <div className="text-xs text-[#1a1d24]/30 italic py-2 px-3 border border-dashed border-[#1a1d24]/15 rounded-lg">
+        {group.name ? `${group.name}: ` : ''}sin descriptores cargados.
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {group.name && (
+        <div className="flex items-center gap-2 mb-1.5">
+          <span className="text-[11px] font-semibold text-[#1a1d24]/60">{group.name}</span>
+          <span className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded ${isMulti ? 'bg-[#c2410c]/10 text-[#c2410c]' : 'bg-[#4d7c0f]/10 text-[#4d7c0f]'}`}>
+            {isMulti ? 'varios' : 'uno'}
+          </span>
+        </div>
+      )}
+      <div className="space-y-1">
+        {group.descriptors.map((d) => {
+          const checked = isMulti
+            ? Array.isArray(sel) && sel.includes(d.id)
+            : sel === d.id;
+          return (
+            <button
+              key={d.id}
+              onClick={() => isMulti ? onToggleMulti(group.id, d.id) : onSetSingle(group.id, d.id)}
+              className={`w-full text-left flex items-start gap-2.5 px-3 py-2 rounded-lg border transition text-sm ${
+                checked
+                  ? 'border-[#1a1d24] bg-[#1a1d24] text-[#faf7f2]'
+                  : 'border-[#1a1d24]/10 hover:border-[#1a1d24]/30 bg-white text-[#1a1d24]/80'
+              }`}
+            >
+              <span
+                className={`flex-shrink-0 w-4 h-4 mt-0.5 flex items-center justify-center transition ${
+                  isMulti ? 'rounded' : 'rounded-full'
+                } ${
+                  checked
+                    ? 'bg-[#faf7f2] text-[#1a1d24]'
+                    : 'border border-[#1a1d24]/30'
+                }`}
+              >
+                {checked && (isMulti ? <Check size={10} strokeWidth={3} /> : <span className="w-1.5 h-1.5 bg-[#1a1d24] rounded-full" />)}
+              </span>
+              <div className="flex-1 leading-snug">
+                {d.label && (
+                  <span className={`inline-block text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded mr-1.5 ${
+                    checked ? 'bg-[#faf7f2]/20 text-[#faf7f2]' : 'bg-[#c2410c]/10 text-[#c2410c]'
+                  }`}>
+                    {d.label}
+                  </span>
+                )}
+                <span>{d.text}</span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function IconBtn({ children, onClick, title, danger }) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className={`p-2 rounded-lg transition ${danger ? 'text-[#7c2d12] hover:bg-[#7c2d12]/10' : 'text-[#1a1d24]/60 hover:bg-[#1a1d24]/5'}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ---------- structure editor ----------
+function StructureEditor({ structure, setStructure, periods, onAddPeriod, onRenamePeriod, onRemovePeriod, onResetDefault }) {
+  const [openComp, setOpenComp] = useState({});
+  const [openCat, setOpenCat] = useState({});
+
+  const toggleComp = (id) => setOpenComp({ ...openComp, [id]: !openComp[id] });
+  const toggleCat = (id) => setOpenCat({ ...openCat, [id]: !openCat[id] });
+
+  const updateStructure = (mutator) => {
+    const copy = JSON.parse(JSON.stringify(structure));
+    mutator(copy);
+    setStructure(copy);
+  };
+
+  const addComp = () => {
+    const name = prompt('Nombre de la competencia:');
+    if (!name?.trim()) return;
+    setStructure([...structure, { id: uid(), name: name.trim(), categories: [] }]);
+  };
+
+  const renameComp = (compId) => {
+    const c = structure.find(x => x.id === compId);
+    const name = prompt('Nuevo nombre:', c?.name);
+    if (!name?.trim()) return;
+    updateStructure(s => {
+      const found = s.find(x => x.id === compId);
+      if (found) found.name = name.trim();
+    });
+  };
+
+  const deleteComp = (compId) => {
+    if (!confirm('¿Eliminar competencia y todo su contenido?')) return;
+    setStructure(structure.filter(x => x.id !== compId));
+  };
+
+  const addCat = (compId) => {
+    const name = prompt('Nombre de la categoría:');
+    if (!name?.trim()) return;
+    updateStructure(s => {
+      const c = s.find(x => x.id === compId);
+      if (c) c.categories.push({
+        id: uid(),
+        name: name.trim(),
+        connector: '',
+        groups: [{ id: uid(), name: '', type: 'single', descriptors: [] }]
+      });
+    });
+  };
+
+  const updateCat = (compId, catId, patch) => {
+    updateStructure(s => {
+      const found = s.find(c => c.id === compId).categories.find(x => x.id === catId);
+      if (found) Object.assign(found, patch);
+    });
+  };
+
+  const renameCat = (compId, catId) => {
+    const cat = structure.find(c => c.id === compId)?.categories.find(x => x.id === catId);
+    const name = prompt('Nuevo nombre:', cat?.name);
+    if (!name?.trim()) return;
+    updateCat(compId, catId, { name: name.trim() });
+  };
+
+  const deleteCat = (compId, catId) => {
+    if (!confirm('¿Eliminar categoría?')) return;
+    updateStructure(s => {
+      const c = s.find(x => x.id === compId);
+      c.categories = c.categories.filter(x => x.id !== catId);
+    });
+  };
+
+  const addGroup = (compId, catId) => {
+    const name = prompt('Nombre del grupo (opcional, dejá vacío si es el grupo principal):') || '';
+    const typeAns = prompt('Tipo: escribí "uno" para selección única, "varios" para selección múltiple', 'uno');
+    const type = typeAns?.toLowerCase().startsWith('v') ? 'multi' : 'single';
+    updateStructure(s => {
+      const cat = s.find(c => c.id === compId).categories.find(x => x.id === catId);
+      cat.groups.push({ id: uid(), name: name.trim(), type, descriptors: [] });
+    });
+  };
+
+  const updateGroup = (compId, catId, groupId, patch) => {
+    updateStructure(s => {
+      const g = s.find(c => c.id === compId).categories.find(x => x.id === catId).groups.find(x => x.id === groupId);
+      Object.assign(g, patch);
+    });
+  };
+
+  const deleteGroup = (compId, catId, groupId) => {
+    if (!confirm('¿Eliminar grupo y sus descriptores?')) return;
+    updateStructure(s => {
+      const cat = s.find(c => c.id === compId).categories.find(x => x.id === catId);
+      cat.groups = cat.groups.filter(x => x.id !== groupId);
+    });
+  };
+
+  const addDescriptor = (compId, catId, groupId) => {
+    updateStructure(s => {
+      const g = s.find(c => c.id === compId).categories.find(x => x.id === catId).groups.find(x => x.id === groupId);
+      g.descriptors.push({ id: uid(), text: '', label: '' });
+    });
+  };
+
+  const updateDescriptor = (compId, catId, groupId, descId, patch) => {
+    updateStructure(s => {
+      const g = s.find(c => c.id === compId).categories.find(x => x.id === catId).groups.find(x => x.id === groupId);
+      const found = g.descriptors.find(x => x.id === descId);
+      if (found) Object.assign(found, patch);
+    });
+  };
+
+  const deleteDescriptor = (compId, catId, groupId, descId) => {
+    updateStructure(s => {
+      const g = s.find(c => c.id === compId).categories.find(x => x.id === catId).groups.find(x => x.id === groupId);
+      g.descriptors = g.descriptors.filter(x => x.id !== descId);
+    });
+  };
+
+  return (
+    <div className="max-w-5xl mx-auto px-6 py-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <h2 className="font-display text-3xl font-semibold tracking-tight">Estructura</h2>
+          <p className="text-sm text-[#1a1d24]/60 mt-1">Períodos, competencias, categorías, grupos y descriptores.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={onResetDefault} className="text-xs text-[#1a1d24]/60 hover:text-[#1a1d24] flex items-center gap-1">
+            <RotateCcw size={12} /> ejemplo
+          </button>
+          <button onClick={addComp} className="flex items-center gap-1.5 px-3 py-2 bg-[#1a1d24] text-[#faf7f2] rounded-lg text-sm font-medium">
+            <Plus size={14} /> Competencia
+          </button>
+        </div>
+      </div>
+
+      {/* Periods section */}
+      <div className="bg-white border border-[#1a1d24]/10 rounded-2xl overflow-hidden mb-5">
+        <div className="px-5 py-3 bg-[#faf7f2] border-b border-[#1a1d24]/10 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Calendar size={14} className="text-[#c2410c]" />
+            <h3 className="font-display text-base font-semibold">Períodos del año</h3>
+          </div>
+          <button onClick={onAddPeriod} className="text-xs flex items-center gap-1 text-[#1a1d24]/70 hover:text-[#1a1d24]">
+            <Plus size={12} /> añadir período
+          </button>
+        </div>
+        <div className="p-4 space-y-2">
+          {periods.map((p, i) => (
+            <div key={p.id} className="flex items-center gap-3 px-3 py-2 border border-[#1a1d24]/10 rounded-lg bg-[#faf7f2]">
+              <span className="text-xs uppercase tracking-wider font-bold text-[#c2410c] w-8">{i + 1}°</span>
+              <span className="flex-1 text-sm font-medium">{p.name}</span>
+              <IconBtn onClick={() => onRenamePeriod(p.id)} title="Renombrar"><Edit3 size={12} /></IconBtn>
+              <IconBtn onClick={() => onRemovePeriod(p.id)} title="Eliminar" danger><Trash2 size={12} /></IconBtn>
+            </div>
+          ))}
+          <p className="text-[11px] text-[#1a1d24]/40 italic mt-2">
+            Cada estudiante tiene marcas independientes por período. Los descriptores son globales: si agregás uno nuevo en cualquier momento, queda disponible en todos los períodos.
+          </p>
+        </div>
+      </div>
+
+      {/* Structure */}
+      <div className="space-y-3">
+        {structure.map((comp) => {
+          const open = openComp[comp.id];
+          const totalDesc = comp.categories.reduce(
+            (acc, c) => acc + c.groups.reduce((a, g) => a + g.descriptors.length, 0), 0
+          );
+          return (
+            <div key={comp.id} className="bg-white border border-[#1a1d24]/10 rounded-2xl overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-3 bg-[#faf7f2] border-b border-[#1a1d24]/10">
+                <button onClick={() => toggleComp(comp.id)} className="flex items-center gap-2 flex-1 text-left">
+                  {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                  <h3 className="font-display text-lg font-semibold">{comp.name}</h3>
+                  <span className="text-xs text-[#1a1d24]/40">
+                    {comp.categories.length} categorías · {totalDesc} descriptores
+                  </span>
+                </button>
+                <div className="flex items-center gap-1">
+                  <IconBtn onClick={() => renameComp(comp.id)} title="Renombrar"><Edit3 size={14} /></IconBtn>
+                  <IconBtn onClick={() => deleteComp(comp.id)} title="Eliminar" danger><Trash2 size={14} /></IconBtn>
+                </div>
+              </div>
+              {open && (
+                <div className="p-5 space-y-3">
+                  {comp.categories.map((cat) => {
+                    const catOpen = openCat[cat.id];
+                    return (
+                      <div key={cat.id} className="border border-[#1a1d24]/10 rounded-xl overflow-hidden">
+                        <div className="flex items-center justify-between px-4 py-2.5 bg-[#1a1d24]/[0.02]">
+                          <button onClick={() => toggleCat(cat.id)} className="flex items-center gap-2 flex-1 text-left">
+                            {catOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                            <h4 className="text-sm font-semibold uppercase tracking-wider text-[#1a1d24]/70">{cat.name}</h4>
+                            <span className="text-[11px] text-[#1a1d24]/40">{cat.groups.length} grupos</span>
+                          </button>
+                          <div className="flex items-center gap-1">
+                            <IconBtn onClick={() => renameCat(comp.id, cat.id)} title="Renombrar"><Edit3 size={12} /></IconBtn>
+                            <IconBtn onClick={() => deleteCat(comp.id, cat.id)} title="Eliminar" danger><Trash2 size={12} /></IconBtn>
+                          </div>
+                        </div>
+                        {catOpen && (
+                          <div className="p-3 space-y-3">
+                            <div>
+                              <label className="text-[10px] uppercase tracking-wider font-semibold text-[#1a1d24]/50 block mb-1">
+                                Conector narrativo (opcional)
+                              </label>
+                              <input
+                                value={cat.connector || ''}
+                                onChange={(e) => updateCat(comp.id, cat.id, { connector: e.target.value })}
+                                placeholder='ej. "En relación con sus producciones escritas," o dejar vacío'
+                                className="w-full text-sm bg-[#faf7f2] border border-[#1a1d24]/10 rounded px-3 py-2 outline-none focus:border-[#1a1d24]/30"
+                              />
+                              <p className="text-[10px] text-[#1a1d24]/40 mt-1 italic">
+                                Si lo completás, encabeza la línea y la primera letra del descriptor pasa a minúscula.
+                              </p>
+                            </div>
+                            {cat.groups.map((group) => (
+                              <GroupEditor
+                                key={group.id}
+                                group={group}
+                                onUpdate={(patch) => updateGroup(comp.id, cat.id, group.id, patch)}
+                                onDelete={() => deleteGroup(comp.id, cat.id, group.id)}
+                                onAddDescriptor={() => addDescriptor(comp.id, cat.id, group.id)}
+                                onUpdateDescriptor={(descId, patch) => updateDescriptor(comp.id, cat.id, group.id, descId, patch)}
+                                onDeleteDescriptor={(descId) => deleteDescriptor(comp.id, cat.id, group.id, descId)}
+                              />
+                            ))}
+                            <button
+                              onClick={() => addGroup(comp.id, cat.id)}
+                              className="w-full text-xs text-[#1a1d24]/50 hover:text-[#1a1d24] py-2 border border-dashed border-[#1a1d24]/15 rounded-lg flex items-center justify-center gap-1"
+                            >
+                              <Plus size={12} /> añadir grupo
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  <button
+                    onClick={() => addCat(comp.id)}
+                    className="w-full text-sm text-[#1a1d24]/60 hover:text-[#1a1d24] py-2.5 border border-dashed border-[#1a1d24]/20 rounded-lg flex items-center justify-center gap-1.5"
+                  >
+                    <Plus size={14} /> añadir categoría
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function GroupEditor({ group, onUpdate, onDelete, onAddDescriptor, onUpdateDescriptor, onDeleteDescriptor }) {
+  return (
+    <div className="border border-[#1a1d24]/10 rounded-lg bg-white">
+      <div className="flex items-center gap-2 px-3 py-2 bg-[#faf7f2] border-b border-[#1a1d24]/5">
+        <input
+          value={group.name}
+          onChange={(e) => onUpdate({ name: e.target.value })}
+          className="flex-1 text-xs font-semibold uppercase tracking-wider bg-transparent outline-none focus:bg-white px-2 py-1 rounded text-[#1a1d24]/70 placeholder:text-[#1a1d24]/30 placeholder:normal-case placeholder:tracking-normal"
+          placeholder="Nombre del grupo (vacío = principal)"
+        />
+        <select
+          value={group.type}
+          onChange={(e) => onUpdate({ type: e.target.value })}
+          className="text-[10px] uppercase tracking-wider px-2 py-1 rounded border border-[#1a1d24]/10 bg-white"
+        >
+          <option value="single">Selección única</option>
+          <option value="multi">Selección múltiple</option>
+        </select>
+        <button onClick={onDelete} className="p-1.5 text-[#7c2d12] hover:bg-[#7c2d12]/10 rounded">
+          <X size={12} />
+        </button>
+      </div>
+      <div className="p-2 space-y-2">
+        {group.descriptors.map((d) => (
+          <div key={d.id} className="border border-[#1a1d24]/10 rounded p-2 group bg-[#faf7f2]/50">
+            <div className="flex items-center gap-2 mb-1.5">
+              <input
+                value={d.label || ''}
+                onChange={(e) => onUpdateDescriptor(d.id, { label: e.target.value })}
+                placeholder="Etiqueta corta (opcional, no aparece en el boletín)"
+                className="flex-1 text-[11px] uppercase tracking-wider font-semibold bg-white border border-[#1a1d24]/10 rounded px-2 py-1 outline-none focus:border-[#c2410c]/40 text-[#c2410c] placeholder:text-[#1a1d24]/30 placeholder:normal-case placeholder:tracking-normal placeholder:text-[10px] placeholder:font-normal"
+              />
+              <button
+                onClick={() => onDeleteDescriptor(d.id)}
+                className="p-1 text-[#7c2d12]/60 hover:text-[#7c2d12] hover:bg-[#7c2d12]/10 rounded opacity-0 group-hover:opacity-100 transition"
+              >
+                <X size={12} />
+              </button>
+            </div>
+            <textarea
+              value={d.text}
+              onChange={(e) => onUpdateDescriptor(d.id, { text: e.target.value })}
+              className="w-full text-sm bg-white border border-[#1a1d24]/10 rounded px-2 py-1.5 outline-none focus:border-[#1a1d24]/30 resize-none"
+              rows={2}
+              placeholder="Frase del descriptor (tal cual aparecerá en el boletín)"
+            />
+          </div>
+        ))}
+        <button
+          onClick={onAddDescriptor}
+          className="w-full text-xs text-[#1a1d24]/40 hover:text-[#1a1d24] py-1.5 flex items-center justify-center gap-1"
+        >
+          <Plus size={11} /> descriptor
+        </button>
+      </div>
+    </div>
+  );
+}
